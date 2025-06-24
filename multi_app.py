@@ -259,22 +259,21 @@ def update_bar_modalidad(clickData):
  )
 
 
-# --- App 4: Por Estado de Seguro (CORREGIDA) ---
+# App 4: Por Estado de Seguro
 app_seguro = dash.Dash(__name__, server=server, url_base_pathname='/asegurados/')
-
 app_seguro.layout = html.Div([
     html.H1("Distribución por Estado del Seguro"),
     dcc.Graph(id='pie-seguro', figure=px.pie(
-        df.dropna(subset=['SEGURO']), # Limpiar NaNs solo en la columna SEGURO
+        df.dropna(),
         names='SEGURO',
         title='Distribución de Pacientes: Asegurados vs No Asegurados',
         template='plotly_white'
     )),
     dcc.Graph(id='bar-espera-seguro', figure=px.bar(
-        pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']), # DataFrame vacío con columnas correctas
+        pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']),
         x='SEXO',
         y='DIFERENCIA_DIAS',
-        title="Seleccione una opción en el gráfico de pastel"
+        title="Seleccione una modalidad en el gráfico de pastel"
     ))
 ])
 
@@ -283,37 +282,23 @@ app_seguro.layout = html.Div([
     Input('pie-seguro', 'clickData')
 )
 def update_bar_seguro(clickData):
-    # Más robusto para verificar si clickData es None o si no tiene puntos válidos
-    if not clickData or (clickData and 'points' in clickData and not clickData['points']):
-        return px.bar(pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']), x='SEXO', y='DIFERENCIA_DIAS', title="Seleccione una opción en el gráfico de pastel")
+    if clickData is None:
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel")
 
-    seguro_seleccionado = clickData['points'][0]['label']
-    filtered_df = df[df['SEGURO'] == seguro_seleccionado].copy()
-
-    # Manejar caso de DataFrame filtrado vacío
-    if filtered_df.empty:
-        # Devuelve un gráfico de barras vacío con un título informativo
-        return px.bar(pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']), x='SEXO', y='DIFERENCIA_DIAS', title=f"No hay datos para seguro '{seguro_seleccionado}'")
-
-    mean_wait = filtered_df.groupby('SEXO', observed=False)['DIFERENCIA_DIAS'].mean().reset_index()
+    seguro = clickData['points'][0]['label']
+    filtered_df = df[df['SEGURO'] == seguro]
+    mean_wait = filtered_df.groupby('SEXO')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
 
     fig = px.bar(
         mean_wait,
         x='SEXO',
         y='DIFERENCIA_DIAS',
-        title=f"Media de Días de Espera por Sexo para Seguro '{seguro_seleccionado}'",
+        title=f"Media de Días de Espera por SEXO ({seguro})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white'
     )
-
-    # Ajustar el rango del eje Y para que siempre se vea bien, incluso con pocos datos o valores pequeños
-    # Si el valor mínimo es 0, no lo restes para que no haya un rango negativo.
-    y_min = mean_wait['DIFERENCIA_DIAS'].min() - 1 if not mean_wait.empty and mean_wait['DIFERENCIA_DIAS'].min() > 0 else 0
-    # Si no hay datos, o si el máximo es pequeño, asegura un rango mínimo visible (ej. hasta 10).
-    y_max = mean_wait['DIFERENCIA_DIAS'].max() + 1 if not mean_wait.empty else 10
-    fig.update_yaxes(range=[y_min, y_max])
-
+    fig.update_yaxes(range=[18, 21])
     return fig
 # App 5: Línea de Tiempo
 
