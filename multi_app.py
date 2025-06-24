@@ -277,7 +277,7 @@ app_seguro.layout = html.Div([
     ))
 ])
 
-@app_modalidad.callback(
+@app_seguro.callback(
     Output('bar-espera-seguro', 'figure'),
     Input('pie-seguro', 'clickData')
 )
