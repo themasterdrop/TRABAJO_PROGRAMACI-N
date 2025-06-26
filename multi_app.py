@@ -288,17 +288,22 @@ def update_bar_modalidad(clickData):
     modalidad = clickData['points'][0]['label']
     filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad]
     mean_wait = filtered_df.groupby('ESPECIALIDAD')['DIFERENCIA_DIAS'].mean().reset_index()
+    mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
-    return px.bar(
+    fig = px.bar(
         mean_wait,
         x='ESPECIALIDAD',
         y='DIFERENCIA_DIAS',
         title=f"Media de Días de Espera por Especialidad ({modalidad})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white',
-        height=500
+        height=500,
+        text='DIFERENCIA_DIAS_ROUNDED'
     )
+    fig.update_traces(textposition='outside')
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
 
+    return fig
 
 # App 4: Por Estado de Seguro
 app_seguro = dash.Dash(__name__, server=server, url_base_pathname='/asegurados/')
