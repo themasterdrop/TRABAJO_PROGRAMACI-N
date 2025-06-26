@@ -1,4 +1,3 @@
-
 import pandas as pd
 from flask import Flask
 import dash
@@ -57,13 +56,13 @@ df['RANGO_DIAS'] = df['DIFERENCIA_DIAS'].apply(clasificar_dias)
 server = Flask(__name__)
 
 # Ruta raíz
-
 @server.route('/')
 def index():
     return render_template_string("""
     <html>
     <head>
         <title>Bienvenido</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -73,7 +72,7 @@ def index():
                 color: #333;
             }
             h2 {
-                 color: #2c3e50;
+                color: #2c3e50;
             }
             .logo {
                 width: 80px;
@@ -87,8 +86,9 @@ def index():
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 display: inline-block;
                 max-width: 600px;
-                width: 100%;
+                width: 100%; /* Asegura que ocupe el 100% del ancho disponible */
                 animation: fadeIn 1s ease-in-out;
+                box-sizing: border-box; /* Incluye padding y border en el width */
             }
             .links {
                 margin-top: 30px;
@@ -103,6 +103,7 @@ def index():
                 text-decoration: none;
                 border-radius: 5px;
                 transition: background-color 0.3s ease, transform 0.2s ease;
+                box-sizing: border-box;
             }
             a:hover {
                 background-color: #2980b9;
@@ -111,6 +112,53 @@ def index():
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(20px); }
                 to { opacity: 1; transform: translateY(0); }
+            }
+
+            /* --- Media Queries para responsividad --- */
+
+            /* Para pantallas pequeñas (ej. celulares) */
+            @media (max-width: 768px) {
+                body {
+                    padding: 20px; /* Reduce el padding general del cuerpo */
+                }
+                .container {
+                    padding: 20px; /* Reduce el padding del contenedor principal */
+                    margin: 0 auto; /* Centra el contenedor y quita márgenes laterales innecesarios */
+                    max-width: 95%; /* Permite que el contenedor sea un poco más estrecho en pantallas muy pequeñas */
+                }
+                h2 {
+                    font-size: 1.8em; /* Ajusta el tamaño de la fuente para encabezados */
+                }
+                .logo {
+                    width: 70px; /* Ajusta el tamaño del logo */
+                }
+                a {
+                    display: block; /* Cada enlace en una nueva línea */
+                    width: calc(100% - 20px); /* Ocupa casi todo el ancho disponible */
+                    margin: 10px auto; /* Centra los enlaces y añade margen vertical */
+                    padding: 10px 15px; /* Reduce el padding de los botones */
+                    font-size: 1em; /* Ajusta el tamaño de la fuente de los enlaces */
+                }
+            }
+
+            /* Para pantallas aún más pequeñas (ej. celulares en orientación vertical) */
+            @media (max-width: 480px) {
+                body {
+                    padding: 10px;
+                }
+                .container {
+                    padding: 15px;
+                }
+                h2 {
+                    font-size: 1.5em;
+                }
+                .logo {
+                    width: 50px;
+                }
+                a {
+                    font-size: 0.9em;
+                    padding: 8px 12px;
+                }
             }
         </style>
     </head>
@@ -134,8 +182,8 @@ def index():
 
 # App 1: Por Rango de Edad
 app_edad = dash.Dash(__name__, server=server, url_base_pathname='/edad/')
-app_edad.layout = html.Div([
-    html.H1("Distribución por Rango de Edad"),
+app_edad.layout = html.Div(style={'padding': '20px'}, children=[ # Agregamos padding al contenedor principal de Dash
+    html.H1("Distribución por Rango de Edad", style={'textAlign': 'center'}),
     dcc.Graph(id='histogram-edad', figure=px.histogram(
         df,
         x='Rango de Edad',
@@ -155,16 +203,13 @@ app_edad.layout = html.Div([
 )
 def update_pie_chart_edad(clickData):
     if clickData is None:
-        return px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=500)
-
+        return px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     selected_range = clickData['points'][0]['x']
     filtered_df = df[df['Rango de Edad'] == selected_range].copy()
-
     top_especialidades = filtered_df['ESPECIALIDAD'].value_counts().nlargest(5)
     filtered_df['ESPECIALIDAD_AGRUPADA'] = filtered_df['ESPECIALIDAD'].apply(
         lambda x: x if x in top_especialidades.index else 'Otras'
     )
-
     grouped = filtered_df['ESPECIALIDAD_AGRUPADA'].value_counts().reset_index()
     grouped.columns = ['ESPECIALIDAD', 'CUENTA']
     return px.pie(
@@ -172,13 +217,13 @@ def update_pie_chart_edad(clickData):
         names='ESPECIALIDAD',
         values='CUENTA',
         title=f"Top 5 Especialidades para el rango de edad '{selected_range}'",
-        height=600
+        height=500
     )
 
 # App 2: Por Rango de Días de Espera
 app_espera = dash.Dash(__name__, server=server, url_base_pathname='/espera/')
-app_espera.layout = html.Div([
-    html.H1("Distribución por Tiempo de Espera"),
+app_espera.layout = html.Div(style={'padding': '20px'}, children=[
+    html.H1("Distribución por Tiempo de Espera", style={'textAlign': 'center'}),
     dcc.Graph(id='histogram-espera', figure=px.histogram(
         df,
         x='RANGO_DIAS',
@@ -198,16 +243,13 @@ app_espera.layout = html.Div([
 )
 def update_pie_chart_espera(clickData):
     if clickData is None:
-        return px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=500)
-
+        return px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     selected_range = clickData['points'][0]['x']
     filtered_df = df[df['RANGO_DIAS'] == selected_range].copy()
-
     top_especialidades = filtered_df['ESPECIALIDAD'].value_counts().nlargest(5)
     filtered_df['ESPECIALIDAD_AGRUPADA'] = filtered_df['ESPECIALIDAD'].apply(
         lambda x: x if x in top_especialidades.index else 'Otras'
     )
-
     grouped = filtered_df['ESPECIALIDAD_AGRUPADA'].value_counts().reset_index()
     grouped.columns = ['ESPECIALIDAD', 'CUENTA']
     return px.pie(
@@ -215,13 +257,13 @@ def update_pie_chart_espera(clickData):
         names='ESPECIALIDAD',
         values='CUENTA',
         title=f"Top 5 Especialidades para el rango de espera '{selected_range}' días",
-        height=600
+        height=500
     )
 
 # App 3: Por Modalidad de Cita
 app_modalidad = dash.Dash(__name__, server=server, url_base_pathname='/modalidad/')
-app_modalidad.layout = html.Div([
-    html.H1("Distribución por Modalidad de Cita"),
+app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
+    html.H1("Distribución por Modalidad de Cita", style={'textAlign': 'center'}),
     dcc.Graph(id='pie-modalidad', figure=px.pie(
         df,
         names='PRESENCIAL_REMOTO',
@@ -242,27 +284,26 @@ app_modalidad.layout = html.Div([
 )
 def update_bar_modalidad(clickData):
     if clickData is None:
-        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel")
-
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
     modalidad = clickData['points'][0]['label']
     filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad]
     mean_wait = filtered_df.groupby('ESPECIALIDAD')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
-
     return px.bar(
         mean_wait,
         x='ESPECIALIDAD',
         y='DIFERENCIA_DIAS',
         title=f"Media de Días de Espera por Especialidad ({modalidad})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
-        template='plotly_white'
- )
+        template='plotly_white',
+        height=500
+    )
 
 
 # App 4: Por Estado de Seguro
 app_seguro = dash.Dash(__name__, server=server, url_base_pathname='/asegurados/')
-app_seguro.layout = html.Div([
-    html.H1("Distribución por Estado del Seguro"),
+app_seguro.layout = html.Div(style={'padding': '20px'}, children=[
+    html.H1("Distribución por Estado del Seguro", style={'textAlign': 'center'}),
     dcc.Graph(id='pie-seguro', figure=px.pie(
         df.dropna(),
         names='SEGURO',
@@ -283,42 +324,45 @@ app_seguro.layout = html.Div([
 )
 def update_bar_seguro(clickData):
     if clickData is None:
-        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel")
-
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
     seguro = clickData['points'][0]['label']
     filtered_df = df[df['SEGURO'] == seguro]
     mean_wait = filtered_df.groupby('SEXO')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
-
     fig = px.bar(
         mean_wait,
         x='SEXO',
         y='DIFERENCIA_DIAS',
         title=f"Media de Días de Espera por SEXO ({seguro})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
-        template='plotly_white'
+        template='plotly_white',
+        height=500 # Altura ajustada
     )
     fig.update_yaxes(range=[18, 21])
     return fig
-# App 5: Línea de Tiempo
 
+# App 5: Línea de Tiempo
 df['DIA_SOLICITACITA'] = pd.to_datetime(df['DIA_SOLICITACITA'], errors='coerce')
 df['MES'] = df['DIA_SOLICITACITA'].dt.to_period('M').astype(str)
 citas_por_mes = df.groupby('MES').size().reset_index(name='CANTIDAD_CITAS')
 
-
 app = dash.Dash(__name__, server=server, url_base_pathname='/tiempo/')
-app.layout = html.Div([
-    html.H1("Citas Agendadas por Mes"),
+app.layout = html.Div(style={'padding': '20px'}, children=[
+    html.H1("Citas Agendadas por Mes", style={'textAlign': 'center'}),
     dcc.Graph(
         id='grafico-lineal',
         figure=px.line(citas_por_mes, x='MES', y='CANTIDAD_CITAS', markers=True,
-                       title='Cantidad de Citas por Mes')
+                         title='Cantidad de Citas por Mes')
     ),
     html.Div([
-        dcc.Graph(id='grafico-pie-especialidades'),
-        dcc.Graph(id='grafico-pie-atencion')
-    ])
+
+        html.Div([
+            dcc.Graph(id='grafico-pie-especialidades', style={'height': '400px'}) # Altura ajustable
+        ], style={'width': '100%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
+        html.Div([
+            dcc.Graph(id='grafico-pie-atencion', style={'height': '400px'}) # Altura ajustable
+        ], style={'width': '100%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
 
 @app.callback(
@@ -329,19 +373,15 @@ app.layout = html.Div([
 def actualizar_graficos(clickData):
     if clickData is None:
         return px.pie(names=[], values=[], title="Seleccione un mes"), px.pie(names=[], values=[], title="Seleccione un mes")
-
     mes_seleccionado = pd.to_datetime(clickData['points'][0]['x']).to_period('M').strftime('%Y-%m')
     df_mes = df[df['MES'] == mes_seleccionado]
-
     top_especialidades = df_mes['ESPECIALIDAD'].value_counts().nlargest(5)
     df_mes['ESPECIALIDAD_AGRUPADA'] = df_mes['ESPECIALIDAD'].apply(
         lambda x: x if x in top_especialidades.index else 'Otras'
     )
-
     grouped = df_mes['ESPECIALIDAD_AGRUPADA'].value_counts().reset_index()
     grouped.columns = ['ESPECIALIDAD', 'CUENTA']
     grouped = grouped.sort_values(by='CUENTA', ascending=False)
-
     
     fig_especialidades = px.pie(grouped, names='ESPECIALIDAD', values="CUENTA", title=f'Distribución de Especialidades en {mes_seleccionado}')
     fig_atencion = px.pie(df_mes, names='ATENDIDO', title=f'Estado de Atención en {mes_seleccionado}')
