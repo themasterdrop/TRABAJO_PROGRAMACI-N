@@ -177,7 +177,7 @@ def index():
     """)
 
 
-# App 1: Por Rango de Edad
+# App 1: Por Rango de Edad (ACTUALIZADA con 3 PIES)
 app_edad = dash.Dash(__name__, server=server, url_base_pathname='/edad/')
 app_edad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Rango de Edad", style={'textAlign': 'center'}),
@@ -189,36 +189,93 @@ app_edad.layout = html.Div(style={'padding': '20px'}, children=[
         labels={'Rango de Edad': 'Rango de Edad'},
         template='plotly_white'
     )),
-    dcc.Graph(id='pie-chart-edad', figure=px.pie(
-        names=[], values=[], title="Seleccione una barra en el histograma"
-    ))
+    html.Div([ # Contenedor para los tres gráficos de pastel dependientes para responsividad
+        html.Div([
+            dcc.Graph(id='pie-chart-edad-especialidades', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
+
+        html.Div([
+            dcc.Graph(id='pie-chart-edad-sexo', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
+
+        html.Div([
+            dcc.Graph(id='pie-chart-edad-seguro', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
 
 @app_edad.callback(
-    Output('pie-chart-edad', 'figure'),
+    [Output('pie-chart-edad-especialidades', 'figure'),
+     Output('pie-chart-edad-sexo', 'figure'),
+     Output('pie-chart-edad-seguro', 'figure')],
     Input('histogram-edad', 'clickData')
 )
-def update_pie_chart_edad(clickData):
+def update_edad_charts(clickData):
+    # Valores iniciales si no hay clic o para reiniciar los gráficos
+    empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_seguro = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+
     if clickData is None:
-        return px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+        return empty_pie_especialidades, empty_pie_sexo, empty_pie_seguro
+
     selected_range = clickData['points'][0]['x']
     filtered_df = df[df['Rango de Edad'] == selected_range].copy()
+
+    # --- 1. Gráfico de Pastel de Especialidades (Top 5) ---
     top_especialidades = filtered_df['ESPECIALIDAD'].value_counts().nlargest(5)
     filtered_df['ESPECIALIDAD_AGRUPADA'] = filtered_df['ESPECIALIDAD'].apply(
         lambda x: x if x in top_especialidades.index else 'Otras'
     )
-    grouped = filtered_df['ESPECIALIDAD_AGRUPADA'].value_counts().reset_index()
-    grouped.columns = ['ESPECIALIDAD', 'CUENTA']
-    return px.pie(
-        grouped,
+    grouped_especialidades = filtered_df['ESPECIALIDAD_AGRUPADA'].value_counts().reset_index()
+    grouped_especialidades.columns = ['ESPECIALIDAD', 'CUENTA']
+    fig_especialidades = px.pie(
+        grouped_especialidades,
         names='ESPECIALIDAD',
         values='CUENTA',
         title=f"Top 5 Especialidades para el rango de edad '{selected_range}'",
         height=500
     )
+    fig_especialidades.update_traces(textposition='inside', textinfo='percent+label')
+    fig_especialidades.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
+
+    # --- 2. Gráfico de Pastel de Distribución por Sexo ---
+    sexo_counts = filtered_df['SEXO'].value_counts().reset_index()
+    sexo_counts.columns = ['SEXO', 'CUENTA']
+    fig_sexo = px.pie(
+        sexo_counts,
+        names='SEXO',
+        values='CUENTA',
+        title=f"Distribución de Sexo para el rango de edad '{selected_range}'",
+        height=500
+    )
+    fig_sexo.update_traces(textposition='inside', textinfo='percent+label')
+    fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
+
+    # --- 3. Gráfico de Pastel de Distribución por Estado de Seguro ---
+    # Asegúrate de manejar los valores NaN si existen en la columna 'SEGURO'
+    seguro_counts = filtered_df['SEGURO'].value_counts().reset_index()
+    seguro_counts.columns = ['SEGURO', 'CUENTA']
+    fig_seguro = px.pie(
+        seguro_counts,
+        names='SEGURO',
+        values='CUENTA',
+        title=f"Distribución de Seguro para el rango de edad '{selected_range}'",
+        height=500
+    )
+    fig_seguro.update_traces(textposition='inside', textinfo='percent+label')
+    fig_seguro.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
+
+    return fig_especialidades, fig_sexo, fig_seguro
 
 
-# App 2: Por Rango de Días de Espera (ACTUALIZADA con 3 PIES)
+# App 2: Por Rango de Días de Espera
 app_espera = dash.Dash(__name__, server=server, url_base_pathname='/espera/')
 app_espera.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Tiempo de Espera", style={'textAlign': 'center'}),
@@ -283,11 +340,10 @@ def update_espera_charts(clickData):
         title=f"Top 5 Especialidades para el rango '{selected_range}' días",
         height=500
     )
-    fig_especialidades.update_traces(textposition='inside', textinfo='percent+label') # Mostrar porcentaje y etiqueta
-    fig_especialidades.update_layout(uniformtext_minsize=12, uniformtext_mode='hide') # Mejorar texto en el pie
+    fig_especialidades.update_traces(textposition='inside', textinfo='percent+label')
+    fig_especialidades.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
     # --- 2. Gráfico de Pastel de Distribución por Sexo ---
-    # Asegurarse de que no haya NaN en 'SEXO' si es posible, o manejarlos
     sexo_counts = filtered_df['SEXO'].value_counts().reset_index()
     sexo_counts.columns = ['SEXO', 'CUENTA']
     fig_sexo = px.pie(
@@ -301,7 +357,6 @@ def update_espera_charts(clickData):
     fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
     # --- 3. Gráfico de Pastel de Distribución Atendido/No Atendido ---
-    # Asegurarse de que no haya NaN en 'ATENDIDO' si es posible, o manejarlos
     atendido_counts = filtered_df['ATENDIDO'].value_counts().reset_index()
     atendido_counts.columns = ['ATENDIDO', 'CUENTA']
     fig_atendido = px.pie(
@@ -316,8 +371,6 @@ def update_espera_charts(clickData):
 
     return fig_especialidades, fig_sexo, fig_atendido
 
-
-# ... (El resto de tus Apps Dash: app_modalidad, app_seguro, app_tiempo) ...
 
 # App 3: Por Modalidad de Cita
 app_modalidad = dash.Dash(__name__, server=server, url_base_pathname='/modalidad/')
