@@ -10,26 +10,7 @@ from flask import render_template_string
 # Cargar los datos
 file_id = "1PWTw-akWr59Gu7MoHra5WXMKwllxK9bp"
 url = f"https://drive.google.com/uc?export=download&id={file_id}"
-try:
-    df = pd.read_csv(url)
-except Exception as e:
-    print(f"Error loading data: {e}")
-    
-    data = {
-        'EDAD': [10, 15, 25, 45, 70, 11, 17, 28, 55, 65],
-        'DIFERENCIA_DIAS': [5, 12, 25, 33, 58, 8, 18, 22, 41, 95],
-        'ESPECIALIDAD': ['Pediatría', 'Traumatología', 'Medicina General', 'Cardiología', 'Geriatría',
-                         'Pediatría', 'Dermatología', 'Medicina General', 'Oftalmología', 'Geriatría'],
-        'SEXO': ['FEMENINO', 'MASCULINO', 'FEMENINO', 'MASCULINO', 'FEMENINO',
-                 'FEMENINO', 'MASCULINO', 'FEMENINO', 'MASCULINO', 'FEMENINO'],
-        'PRESENCIAL_REMOTO': ['PRESENCIAL', 'REMOTO', 'PRESENCIAL', 'REMOTO', 'PRESENCIAL',
-                              'PRESENCIAL', 'REMOTO', 'PRESENCIAL', 'REMOTO', 'PRESENCIAL'],
-        'SEGURO': ['SI', 'NO', 'SI', 'SI', 'NO', 'SI', 'NO', 'SI', 'SI', 'NO'],
-        'ATENDIDO': ['SI', 'NO', 'SI', 'SI', 'NO', 'SI', 'NO', 'SI', 'SI', 'NO'],
-        'DIA_SOLICITACITA': ['2023-01-10', '2023-01-15', '2023-02-01', '2023-02-20', '2023-03-05',
-                             '2023-03-10', '2023-04-01', '2023-04-15', '2023-05-01', '2023-05-10']
-    }
-    df = pd.DataFrame(data)
+df = pd.read_csv(url)
 
 # Clasificación por edad
 def clasificar_edad(edad):
@@ -43,14 +24,11 @@ def clasificar_edad(edad):
         return "Adulto"
     elif edad < 200:
         return "Adulto mayor"
-    return "Desconocido"
 
 df['Rango de Edad'] = df['EDAD'].apply(clasificar_edad)
 
 # Clasificación por días de espera
 def clasificar_dias(dias):
-    if pd.isna(dias): # Handle NaN values
-        return "Desconocido"
     if dias < 10:
         return "0-9"
     elif dias < 20:
@@ -183,8 +161,7 @@ def index():
     </head>
     <body>
         <div class="container">
-            <!-- Placeholder for logo. If you have a static folder, ensure logo.png is there -->
-            <img src="https://placehold.co/80x80/cccccc/333333?text=Logo" alt="Logo de la Institución" class="logo">
+            <img src="/static/logo.png" alt="Logo de la Institución" class="logo">
             <h2>Bienvenido</h2>
             <p>Explora las siguientes visualizaciones:</p>
             <div class="links">
@@ -204,42 +181,31 @@ def index():
 app_edad = dash.Dash(__name__, server=server, url_base_pathname='/edad/')
 app_edad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Rango de Edad", style={'textAlign': 'center'}),
-    
-    dcc.Graph(
-        id='histogram-edad',
-        figure=px.histogram(
-            df,
-            x='Rango de Edad',
-            category_orders={'Rango de Edad': ["Niño", "Adolescente", "Joven", "Adulto", "Adulto mayor"]},
-            title='Distribución de edades de los pacientes del hospital María Auxiliadora',
-            labels={'Rango de Edad': 'Rango de Edad'},
-            template='plotly_white'
-        ),
-        style={'height': '450px', 'width': '100%'}
-    ),
-    html.Div([ 
+    dcc.Graph(id='histogram-edad', figure=px.histogram(
+        df,
+        x='Rango de Edad',
+        category_orders={'Rango de Edad': ["Niño", "Adolescente", "Joven", "Adulto", "Adulto mayor"]},
+        title='Distribución de edades de los pacientes del hospital María Auxiliadora',
+        labels={'Rango de Edad': 'Rango de Edad'},
+        template='plotly_white'
+    )),
+    html.Div([ # Contenedor para los tres gráficos de pastel dependientes para responsividad
         html.Div([
-            dcc.Graph(
-                id='pie-chart-edad-especialidades',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"),
-                style={'width': '100%', 'min-height': '350px'} 
-            )
+            dcc.Graph(id='pie-chart-edad-especialidades', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
         ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
 
         html.Div([
-            dcc.Graph(
-                id='pie-chart-edad-sexo',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"),
-                style={'width': '100%', 'min-height': '350px'} 
-            )
+            dcc.Graph(id='pie-chart-edad-sexo', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
         ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
 
         html.Div([
-            dcc.Graph(
-                id='pie-chart-edad-seguro',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"), 
-                style={'width': '100%', 'min-height': '350px'} 
-            )
+            dcc.Graph(id='pie-chart-edad-seguro', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
         ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
@@ -252,9 +218,9 @@ app_edad.layout = html.Div(style={'padding': '20px'}, children=[
 )
 def update_edad_charts(clickData):
     # Valores iniciales si no hay clic o para reiniciar los gráficos
-    empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
-    empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
-    empty_pie_seguro = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
+    empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_seguro = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
 
     if clickData is None:
         return empty_pie_especialidades, empty_pie_sexo, empty_pie_seguro
@@ -273,7 +239,8 @@ def update_edad_charts(clickData):
         grouped_especialidades,
         names='ESPECIALIDAD',
         values='CUENTA',
-        title=f"Top 5 Especialidades para el rango de edad '{selected_range}'"
+        title=f"Top 5 Especialidades para el rango de edad '{selected_range}'",
+        height=500
     )
     fig_especialidades.update_traces(textposition='inside', textinfo='percent+label')
     fig_especialidades.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
@@ -285,21 +252,23 @@ def update_edad_charts(clickData):
         sexo_counts,
         names='SEXO',
         values='CUENTA',
-        title=f"Distribución de Sexo para el rango de edad '{selected_range}'"
-    ) 
+        title=f"Distribución de Sexo para el rango de edad '{selected_range}'",
+        height=500
+    )
     fig_sexo.update_traces(textposition='inside', textinfo='percent+label')
     fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
     # --- 3. Gráfico de Pastel de Distribución por Estado de Seguro ---
-    
+    # Asegúrate de manejar los valores NaN si existen en la columna 'SEGURO'
     seguro_counts = filtered_df['SEGURO'].value_counts().reset_index()
     seguro_counts.columns = ['SEGURO', 'CUENTA']
     fig_seguro = px.pie(
         seguro_counts,
         names='SEGURO',
         values='CUENTA',
-        title=f"Distribución de Seguro para el rango de edad '{selected_range}'"
-    ) 
+        title=f"Distribución de Seguro para el rango de edad '{selected_range}'",
+        height=500
+    )
     fig_seguro.update_traces(textposition='inside', textinfo='percent+label')
     fig_seguro.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
@@ -310,43 +279,32 @@ def update_edad_charts(clickData):
 app_espera = dash.Dash(__name__, server=server, url_base_pathname='/espera/')
 app_espera.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Tiempo de Espera", style={'textAlign': 'center'}),
-    
-    dcc.Graph(
-        id='histogram-espera',
-        figure=px.histogram(
-            df,
-            x='RANGO_DIAS',
-            category_orders={'RANGO_DIAS': ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90+"]},
-            title='Distribución de la Cantidad de Pacientes según su Tiempo de Espera',
-            labels={'RANGO_DIAS': 'Rango de Días'},
-            template='plotly_white'
-        ),
-        style={'height': '450px', 'width': '100%'} 
-    ),
+    dcc.Graph(id='histogram-espera', figure=px.histogram(
+        df,
+        x='RANGO_DIAS',
+        category_orders={'RANGO_DIAS': ["0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80-89", "90+"]},
+        title='Distribución de la Cantidad de Pacientes según su Tiempo de Espera',
+        labels={'RANGO_DIAS': 'Rango de Días'},
+        template='plotly_white'
+    )),
     html.Div([ # Contenedor para los tres gráficos de pastel dependientes para responsividad
         html.Div([
-            dcc.Graph(
-                id='pie-chart-espera-especialidades',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"), 
-                style={'width': '100%', 'min-height': '350px'} 
-            )
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
+            dcc.Graph(id='pie-chart-espera-especialidades', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}), # max-width para 2 por fila
 
         html.Div([
-            dcc.Graph(
-                id='pie-chart-espera-sexo',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"),
-                style={'width': '100%', 'min-height': '350px'}
-            )
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
+            dcc.Graph(id='pie-chart-espera-sexo', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}), # max-width para 2 por fila
 
         html.Div([
-            dcc.Graph(
-                id='pie-chart-espera-atendido',
-                figure=px.pie(names=[], values=[], title="Seleccione una barra en el histograma"),
-                style={'width': '100%', 'min-height': '350px'} 
-            )
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
+            dcc.Graph(id='pie-chart-espera-atendido', figure=px.pie(
+                names=[], values=[], title="Seleccione una barra en el histograma", height=400
+            ))
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}) # max-width para 2 por fila
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
 
@@ -358,9 +316,9 @@ app_espera.layout = html.Div(style={'padding': '20px'}, children=[
 )
 def update_espera_charts(clickData):
     # Valores iniciales si no hay clic o para reiniciar los gráficos
-    empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
-    empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
-    empty_pie_atendido = px.pie(names=[], values=[], title="Seleccione una barra en el histograma")
+    empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
+    empty_pie_atendido = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
 
     if clickData is None:
         return empty_pie_especialidades, empty_pie_sexo, empty_pie_atendido
@@ -379,8 +337,9 @@ def update_espera_charts(clickData):
         grouped_especialidades,
         names='ESPECIALIDAD',
         values='CUENTA',
-        title=f"Top 5 Especialidades para el rango '{selected_range}' días"
-    ) # Removed height
+        title=f"Top 5 Especialidades para el rango '{selected_range}' días",
+        height=500
+    )
     fig_especialidades.update_traces(textposition='inside', textinfo='percent+label')
     fig_especialidades.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
@@ -391,7 +350,8 @@ def update_espera_charts(clickData):
         sexo_counts,
         names='SEXO',
         values='CUENTA',
-        title=f"Distribución de Sexo para el rango '{selected_range}' días"
+        title=f"Distribución de Sexo para el rango '{selected_range}' días",
+        height=500
     )
     fig_sexo.update_traces(textposition='inside', textinfo='percent+label')
     fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
@@ -403,7 +363,8 @@ def update_espera_charts(clickData):
         atendido_counts,
         names='ATENDIDO',
         values='CUENTA',
-        title=f"Estado de Atención para el rango '{selected_range}' días"
+        title=f"Estado de Atención para el rango '{selected_range}' días",
+        height=500
     )
     fig_atendido.update_traces(textposition='inside', textinfo='percent+label')
     fig_atendido.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
@@ -415,26 +376,18 @@ def update_espera_charts(clickData):
 app_modalidad = dash.Dash(__name__, server=server, url_base_pathname='/modalidad/')
 app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Modalidad de Cita", style={'textAlign': 'center'}),
-    dcc.Graph(
-        id='pie-modalidad',
-        figure=px.pie(
-            df,
-            names='PRESENCIAL_REMOTO',
-            title='Distribución de Citas: Remotas vs Presenciales',
-            template='plotly_white'
-        ),
-        style={'height': '450px', 'width': '100%'} 
-    ),
-    dcc.Graph(
-        id='bar-especialidad-modalidad',
-        figure=px.bar(
-            pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS']),
-            x='ESPECIALIDAD',
-            y='DIFERENCIA_DIAS',
-            title="Seleccione una modalidad en el gráfico de pastel"
-        ),
-        style={'height': '500px', 'width': '100%'} 
-    )
+    dcc.Graph(id='pie-modalidad', figure=px.pie(
+        df,
+        names='PRESENCIAL_REMOTO',
+        title='Distribución de Citas: Remotas vs Presenciales',
+        template='plotly_white'
+    )),
+    dcc.Graph(id='bar-especialidad-modalidad', figure=px.bar(
+        pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS']),
+        x='ESPECIALIDAD',
+        y='DIFERENCIA_DIAS',
+        title="Seleccione una modalidad en el gráfico de pastel"
+    ))
 ])
 
 @app_modalidad.callback(
@@ -443,8 +396,7 @@ app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
 )
 def update_bar_modalidad(clickData):
     if clickData is None:
-        
-        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel")
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
     
     modalidad = clickData['points'][0]['label']
     filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad]
@@ -452,8 +404,8 @@ def update_bar_modalidad(clickData):
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
     
-    
-    bar_color = 'red' if modalidad == 'REMOTO' else '#3498db'
+    # Set bar color based on modality
+    bar_color = 'red' if modalidad == 'REMOTO' else '#3498db' # Default blue for 'PRESENCIAL'
 
     fig = px.bar(
         mean_wait,
@@ -462,10 +414,11 @@ def update_bar_modalidad(clickData):
         title=f"Media de Días de Espera por Especialidad ({modalidad})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white',
+        height=500,
         text='DIFERENCIA_DIAS_ROUNDED'
     )
     
-    
+    # Update the bar color
     fig.update_traces(marker_color=bar_color, textposition='outside')
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     return fig
@@ -475,26 +428,18 @@ def update_bar_modalidad(clickData):
 app_seguro = dash.Dash(__name__, server=server, url_base_pathname='/asegurados/')
 app_seguro.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Estado del Seguro", style={'textAlign': 'center'}),
-    dcc.Graph(
-        id='pie-seguro',
-        figure=px.pie(
-            df.dropna(subset=['SEGURO']),
-            names='SEGURO',
-            title='Distribución de Pacientes: Asegurados vs No Asegurados',
-            template='plotly_white'
-        ),
-        style={'height': '450px', 'width': '100%'}
-    ),
-    dcc.Graph(
-        id='bar-espera-seguro',
-        figure=px.bar(
-            pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']),
-            x='SEXO',
-            y='DIFERENCIA_DIAS',
-            title="Seleccione una modalidad en el gráfico de pastel"
-        ),
-        style={'height': '500px', 'width': '100%'}
-    )
+    dcc.Graph(id='pie-seguro', figure=px.pie(
+        df.dropna(),
+        names='SEGURO',
+        title='Distribución de Pacientes: Asegurados vs No Asegurados',
+        template='plotly_white'
+    )),
+    dcc.Graph(id='bar-espera-seguro', figure=px.bar(
+        pd.DataFrame(columns=['SEXO', 'DIFERENCIA_DIAS']),
+        x='SEXO',
+        y='DIFERENCIA_DIAS',
+        title="Seleccione una modalidad en el gráfico de pastel"
+    ))
 ])
 
 @app_seguro.callback(
@@ -503,8 +448,7 @@ app_seguro.layout = html.Div(style={'padding': '20px'}, children=[
 )
 def update_bar_seguro(clickData):
     if clickData is None:
-        
-        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel")
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
     
     seguro = clickData['points'][0]['label']
     filtered_df = df[df['SEGURO'] == seguro]
@@ -512,8 +456,8 @@ def update_bar_seguro(clickData):
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
     
-   
-    bar_color = 'red' if seguro == 'NO' else '#3498db'
+    # Set bar color based on insurance status
+    bar_color = 'red' if seguro == 'NO' else '#3498db' # Default blue for 'SI' or other values
 
     fig = px.bar(
         mean_wait,
@@ -522,18 +466,18 @@ def update_bar_seguro(clickData):
         title=f"Media de Días de Espera por SEXO ({seguro})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white',
+        height=500,
         text='DIFERENCIA_DIAS_ROUNDED'
-    ) # Removed height
+    )
     fig.update_traces(marker_color=bar_color, textposition='outside')
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
-    
+    fig.update_yaxes(range=[18, 21])
     return fig
 
 # App 5: Línea de Tiempo
 df['DIA_SOLICITACITA'] = pd.to_datetime(df['DIA_SOLICITACITA'], errors='coerce')
-df_valid_dates = df.dropna(subset=['DIA_SOLICITACITA']).copy()
-df_valid_dates['MES'] = df_valid_dates['DIA_SOLICITACITA'].dt.to_period('M').astype(str)
-citas_por_mes = df_valid_dates.groupby('MES').size().reset_index(name='CANTIDAD_CITAS')
+df['MES'] = df['DIA_SOLICITACITA'].dt.to_period('M').astype(str)
+citas_por_mes = df.groupby('MES').size().reset_index(name='CANTIDAD_CITAS')
 
 
 app = dash.Dash(__name__, server=server, url_base_pathname='/tiempo/')
@@ -542,15 +486,14 @@ app.layout = html.Div(style={'padding': '20px'}, children=[
     dcc.Graph(
         id='grafico-lineal',
         figure=px.line(citas_por_mes, x='MES', y='CANTIDAD_CITAS', markers=True,
-                       title='Cantidad de Citas por Mes'),
-        style={'height': '450px', 'width': '100%'}
+                       title='Cantidad de Citas por Mes')
     ),
     html.Div([
         html.Div([
-            dcc.Graph(id='grafico-pie-especialidades', style={'height': '400px', 'width': '100%'})
+            dcc.Graph(id='grafico-pie-especialidades', style={'height': '400px'})
         ], style={'width': '100%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
         html.Div([
-            dcc.Graph(id='grafico-pie-atencion', style={'height': '400px', 'width': '100%'})
+            dcc.Graph(id='grafico-pie-atencion', style={'height': '400px'})
         ], style={'width': '100%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
@@ -562,12 +505,9 @@ app.layout = html.Div(style={'padding': '20px'}, children=[
 )
 def actualizar_graficos(clickData):
     if clickData is None:
-        
         return px.pie(names=[], values=[], title="Seleccione un mes"), px.pie(names=[], values=[], title="Seleccione un mes")
-    
     mes_seleccionado = pd.to_datetime(clickData['points'][0]['x']).to_period('M').strftime('%Y-%m')
     df_mes = df[df['MES'] == mes_seleccionado]
-    
     top_especialidades = df_mes['ESPECIALIDAD'].value_counts().nlargest(5)
     df_mes['ESPECIALIDAD_AGRUPADA'] = df_mes['ESPECIALIDAD'].apply(
         lambda x: x if x in top_especialidades.index else 'Otras'
@@ -576,8 +516,8 @@ def actualizar_graficos(clickData):
     grouped.columns = ['ESPECIALIDAD', 'CUENTA']
     grouped = grouped.sort_values(by='CUENTA', ascending=False)
     
-    fig_especialidades = px.pie(grouped, names='ESPECIALIDAD', values="CUENTA", title=f'Distribución de Especialidades en {mes_seleccionado}') # Removed height
-    fig_atencion = px.pie(df_mes, names='ATENDIDO', title=f'Estado de Atención en {mes_seleccionado}') # Removed height
+    fig_especialidades = px.pie(grouped, names='ESPECIALIDAD', values="CUENTA", title=f'Distribución de Especialidades en {mes_seleccionado}')
+    fig_atencion = px.pie(df_mes, names='ATENDIDO', title=f'Estado de Atención en {mes_seleccionado}')
 
     return fig_especialidades, fig_atencion
 
