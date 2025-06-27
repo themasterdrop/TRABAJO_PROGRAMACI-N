@@ -177,7 +177,7 @@ def index():
     """)
 
 
-# App 1: Por Rango de Edad
+# App 1: Por Rango de Edad (ACTUALIZADA con 3 PIES)
 app_edad = dash.Dash(__name__, server=server, url_base_pathname='/edad/')
 app_edad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Rango de Edad", style={'textAlign': 'center'}),
@@ -259,6 +259,7 @@ def update_edad_charts(clickData):
     fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
     # --- 3. Gráfico de Pastel de Distribución por Estado de Seguro ---
+    # Asegúrate de manejar los valores NaN si existen en la columna 'SEGURO'
     seguro_counts = filtered_df['SEGURO'].value_counts().reset_index()
     seguro_counts.columns = ['SEGURO', 'CUENTA']
     fig_seguro = px.pie(
@@ -371,7 +372,7 @@ def update_espera_charts(clickData):
     return fig_especialidades, fig_sexo, fig_atendido
 
 
-# App 3: Por Modalidad de Cita (CORREGIDA)
+# App 3: Por Modalidad de Cita
 app_modalidad = dash.Dash(__name__, server=server, url_base_pathname='/modalidad/')
 app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Modalidad de Cita", style={'textAlign': 'center'}),
@@ -381,49 +382,27 @@ app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
         title='Distribución de Citas: Remotas vs Presenciales',
         template='plotly_white'
     )),
-    html.Div([ # Contenedor para los dos gráficos dependientes para responsividad
-        html.Div([
-            dcc.Graph(id='bar-especialidad-modalidad', figure={}) # Figura vacía inicial
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
-
-        html.Div([
-            dcc.Graph(id='pie-modalidad-atendido', figure=px.pie(
-                names=[], values=[], title="Seleccione una modalidad en el gráfico de pastel", height=400
-            ))
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
+    dcc.Graph(id='bar-especialidad-modalidad', figure=px.bar(
+        pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS']),
+        x='ESPECIALIDAD',
+        y='DIFERENCIA_DIAS',
+        title="Seleccione una modalidad en el gráfico de pastel"
+    ))
 ])
 
 @app_modalidad.callback(
-    [Output('bar-especialidad-modalidad', 'figure'),
-     Output('pie-modalidad-atendido', 'figure')],
+    Output('bar-especialidad-modalidad', 'figure'),
     Input('pie-modalidad', 'clickData')
 )
-def update_modalidad_charts(clickData):
-    # Valores iniciales para reiniciar los gráficos
-    # CORRECTO: Inicializar un DataFrame vacío para el gráfico de barras
-    empty_df_bar = pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS', 'DIFERENCIA_DIAS_ROUNDED'])
-    empty_bar = px.bar(
-        empty_df_bar,
-        x='ESPECIALIDAD',
-        y='DIFERENCIA_DIAS',
-        title="Seleccione una modalidad en el gráfico de pastel",
-        height=400
-    )
-    empty_pie_atendido = px.pie(names=[], values=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
-
+def update_bar_modalidad(clickData):
     if clickData is None:
-        return empty_bar, empty_pie_atendido
-
+        return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
     modalidad = clickData['points'][0]['label']
-    filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad].copy()
-
-    # --- Lógica para el Gráfico de Barras (Media de Días de Espera por Especialidad) ---
+    filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad]
     mean_wait = filtered_df.groupby('ESPECIALIDAD')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
-
-    fig_bar = px.bar(
+    fig = px.bar(
         mean_wait,
         x='ESPECIALIDAD',
         y='DIFERENCIA_DIAS',
@@ -433,28 +412,9 @@ def update_modalidad_charts(clickData):
         height=500,
         text='DIFERENCIA_DIAS_ROUNDED'
     )
-    fig_bar.update_traces(textposition='outside')
-    fig_bar.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
-
-    # Aplicar color rojo si la modalidad es "REMOTO"
-    if modalidad == "REMOTO":
-        fig_bar.update_traces(marker_color='red')
-
-
-    # --- Lógica para el Gráfico de Pastel (Distribución Atendido/No Atendido) ---
-    atendido_counts = filtered_df['ATENDIDO'].value_counts().reset_index()
-    atendido_counts.columns = ['ATENDIDO', 'CUENTA']
-    fig_pie_atendido = px.pie(
-        atendido_counts,
-        names='ATENDIDO',
-        values='CUENTA',
-        title=f"Estado de Atención para citas {modalidad}",
-        height=500
-    )
-    fig_pie_atendido.update_traces(textposition='inside', textinfo='percent+label')
-    fig_pie_atendido.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
-
-    return fig_bar, fig_pie_atendido
+    fig.update_traces(textposition='outside')
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    return fig
 
 
 # App 4: Por Estado de Seguro
@@ -490,7 +450,7 @@ def update_bar_seguro(clickData):
     fig = px.bar(
         mean_wait,
         x='SEXO',
-        y='DIFERENCIA_DIAS', # Corrección: Cambié DIFERENCIA_DIERENCIA_DIAS a DIFERENCIA_DIAS
+        y='DIFERENCIA_DIAS',
         title=f"Media de Días de Espera por SEXO ({seguro})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white',
