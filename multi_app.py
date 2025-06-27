@@ -449,11 +449,16 @@ app_seguro.layout = html.Div(style={'padding': '20px'}, children=[
 def update_bar_seguro(clickData):
     if clickData is None:
         return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
+    
     seguro = clickData['points'][0]['label']
     filtered_df = df[df['SEGURO'] == seguro]
     mean_wait = filtered_df.groupby('SEXO')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
+    
+    # Set bar color based on insurance status
+    bar_color = 'red' if seguro == 'NO' else '#3498db' # Default blue for 'SI' or other values
+
     fig = px.bar(
         mean_wait,
         x='SEXO',
@@ -464,7 +469,7 @@ def update_bar_seguro(clickData):
         height=500,
         text='DIFERENCIA_DIAS_ROUNDED'
     )
-    fig.update_traces(textposition='outside')
+    fig.update_traces(marker_color=bar_color, textposition='outside')
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     fig.update_yaxes(range=[18, 21])
     return fig
