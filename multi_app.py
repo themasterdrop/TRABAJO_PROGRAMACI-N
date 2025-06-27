@@ -397,11 +397,16 @@ app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
 def update_bar_modalidad(clickData):
     if clickData is None:
         return px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
+    
     modalidad = clickData['points'][0]['label']
     filtered_df = df[df['PRESENCIAL_REMOTO'] == modalidad]
     mean_wait = filtered_df.groupby('ESPECIALIDAD')['DIFERENCIA_DIAS'].mean().reset_index()
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
+    
+    # Set bar color based on modality
+    bar_color = 'red' if modalidad == 'REMOTO' else '#3498db' # Default blue for 'PRESENCIAL'
+
     fig = px.bar(
         mean_wait,
         x='ESPECIALIDAD',
@@ -412,7 +417,9 @@ def update_bar_modalidad(clickData):
         height=500,
         text='DIFERENCIA_DIAS_ROUNDED'
     )
-    fig.update_traces(textposition='outside')
+    
+    # Update the bar color
+    fig.update_traces(marker_color=bar_color, textposition='outside')
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     return fig
 
@@ -474,7 +481,7 @@ app.layout = html.Div(style={'padding': '20px'}, children=[
     dcc.Graph(
         id='grafico-lineal',
         figure=px.line(citas_por_mes, x='MES', y='CANTIDAD_CITAS', markers=True,
-                         title='Cantidad de Citas por Mes')
+                       title='Cantidad de Citas por Mes')
     ),
     html.Div([
         html.Div([
