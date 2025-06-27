@@ -177,7 +177,7 @@ def index():
     """)
 
 
-# App 1: Por Rango de Edad (ACTUALIZADA con 3 PIES)
+# App 1: Por Rango de Edad
 app_edad = dash.Dash(__name__, server=server, url_base_pathname='/edad/')
 app_edad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Rango de Edad", style={'textAlign': 'center'}),
@@ -189,7 +189,7 @@ app_edad.layout = html.Div(style={'padding': '20px'}, children=[
         labels={'Rango de Edad': 'Rango de Edad'},
         template='plotly_white'
     )),
-    html.Div([ # Contenedor para los tres gráficos de pastel dependientes para responsividad
+    html.Div([
         html.Div([
             dcc.Graph(id='pie-chart-edad-especialidades', figure=px.pie(
                 names=[], values=[], title="Seleccione una barra en el histograma", height=400
@@ -217,7 +217,7 @@ app_edad.layout = html.Div(style={'padding': '20px'}, children=[
     Input('histogram-edad', 'clickData')
 )
 def update_edad_charts(clickData):
-    # Valores iniciales si no hay clic o para reiniciar los gráficos
+    
     empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     empty_pie_seguro = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
@@ -259,7 +259,7 @@ def update_edad_charts(clickData):
     fig_sexo.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
     # --- 3. Gráfico de Pastel de Distribución por Estado de Seguro ---
-    # Asegúrate de manejar los valores NaN si existen en la columna 'SEGURO'
+    
     seguro_counts = filtered_df['SEGURO'].value_counts().reset_index()
     seguro_counts.columns = ['SEGURO', 'CUENTA']
     fig_seguro = px.pie(
@@ -287,24 +287,24 @@ app_espera.layout = html.Div(style={'padding': '20px'}, children=[
         labels={'RANGO_DIAS': 'Rango de Días'},
         template='plotly_white'
     )),
-    html.Div([ # Contenedor para los tres gráficos de pastel dependientes para responsividad
+    html.Div([
         html.Div([
             dcc.Graph(id='pie-chart-espera-especialidades', figure=px.pie(
                 names=[], values=[], title="Seleccione una barra en el histograma", height=400
             ))
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}), # max-width para 2 por fila
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
 
         html.Div([
             dcc.Graph(id='pie-chart-espera-sexo', figure=px.pie(
                 names=[], values=[], title="Seleccione una barra en el histograma", height=400
             ))
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}), # max-width para 2 por fila
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
 
         html.Div([
             dcc.Graph(id='pie-chart-espera-atendido', figure=px.pie(
                 names=[], values=[], title="Seleccione una barra en el histograma", height=400
             ))
-        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}) # max-width para 2 por fila
+        ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'})
     ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'})
 ])
 
@@ -315,7 +315,7 @@ app_espera.layout = html.Div(style={'padding': '20px'}, children=[
     Input('histogram-espera', 'clickData')
 )
 def update_espera_charts(clickData):
-    # Valores iniciales si no hay clic o para reiniciar los gráficos
+   
     empty_pie_especialidades = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     empty_pie_sexo = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
     empty_pie_atendido = px.pie(names=[], values=[], title="Seleccione una barra en el histograma", height=400)
@@ -404,8 +404,8 @@ def update_bar_modalidad(clickData):
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
     
-    # Set bar color based on modality
-    bar_color = 'red' if modalidad == 'REMOTO' else '#3498db' # Default blue for 'PRESENCIAL'
+    
+    bar_color = 'red' if modalidad == 'REMOTO' else '#3498db'
 
     fig = px.bar(
         mean_wait,
@@ -418,7 +418,7 @@ def update_bar_modalidad(clickData):
         text='DIFERENCIA_DIAS_ROUNDED'
     )
     
-    # Update the bar color
+    
     fig.update_traces(marker_color=bar_color, textposition='outside')
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     return fig
@@ -456,8 +456,8 @@ def update_bar_seguro(clickData):
     mean_wait['DIFERENCIA_DIAS_ROUNDED'] = mean_wait['DIFERENCIA_DIAS'].round().astype(int)
     mean_wait = mean_wait.sort_values(by='DIFERENCIA_DIAS', ascending=False)
     
-    # Set bar color based on insurance status
-    bar_color = 'red' if seguro == 'NO' else '#3498db' # Default blue for 'SI' or other values
+    
+    bar_color = 'red' if seguro == 'NO' else '#3498db'
 
     fig = px.bar(
         mean_wait,
