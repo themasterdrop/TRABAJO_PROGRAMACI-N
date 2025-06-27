@@ -371,7 +371,7 @@ def update_espera_charts(clickData):
     return fig_especialidades, fig_sexo, fig_atendido
 
 
-# App 3: Por Modalidad de Cita (ACTUALIZADA con PIE de atendidos y barras rojas)
+# App 3: Por Modalidad de Cita (CORREGIDA)
 app_modalidad = dash.Dash(__name__, server=server, url_base_pathname='/modalidad/')
 app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
     html.H1("Distribución por Modalidad de Cita", style={'textAlign': 'center'}),
@@ -383,12 +383,7 @@ app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
     )),
     html.Div([ # Contenedor para los dos gráficos dependientes para responsividad
         html.Div([
-            dcc.Graph(id='bar-especialidad-modalidad', figure=px.bar(
-                pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS']),
-                x='ESPECIALIDAD',
-                y='DIFERENCIA_DIAS',
-                title="Seleccione una modalidad en el gráfico de pastel"
-            ))
+            dcc.Graph(id='bar-especialidad-modalidad', figure={}) # Figura vacía inicial
         ], style={'width': '100%', 'max-width': '48%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '10px'}),
 
         html.Div([
@@ -401,12 +396,20 @@ app_modalidad.layout = html.Div(style={'padding': '20px'}, children=[
 
 @app_modalidad.callback(
     [Output('bar-especialidad-modalidad', 'figure'),
-     Output('pie-modalidad-atendido', 'figure')], # Nuevo Output para el gráfico de pie de atendidos
+     Output('pie-modalidad-atendido', 'figure')],
     Input('pie-modalidad', 'clickData')
 )
 def update_modalidad_charts(clickData):
     # Valores iniciales para reiniciar los gráficos
-    empty_bar = px.bar(x=[], y=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
+    # CORRECTO: Inicializar un DataFrame vacío para el gráfico de barras
+    empty_df_bar = pd.DataFrame(columns=['ESPECIALIDAD', 'DIFERENCIA_DIAS', 'DIFERENCIA_DIAS_ROUNDED'])
+    empty_bar = px.bar(
+        empty_df_bar,
+        x='ESPECIALIDAD',
+        y='DIFERENCIA_DIAS',
+        title="Seleccione una modalidad en el gráfico de pastel",
+        height=400
+    )
     empty_pie_atendido = px.pie(names=[], values=[], title="Seleccione una modalidad en el gráfico de pastel", height=400)
 
     if clickData is None:
@@ -451,7 +454,7 @@ def update_modalidad_charts(clickData):
     fig_pie_atendido.update_traces(textposition='inside', textinfo='percent+label')
     fig_pie_atendido.update_layout(uniformtext_minsize=12, uniformtext_mode='hide')
 
-    return fig_bar, fig_pie_atendido # Devolvemos ambos gráficos
+    return fig_bar, fig_pie_atendido
 
 
 # App 4: Por Estado de Seguro
@@ -487,7 +490,7 @@ def update_bar_seguro(clickData):
     fig = px.bar(
         mean_wait,
         x='SEXO',
-        y='DIFERENCIA_DIERENCIA_DIAS',
+        y='DIFERENCIA_DIAS', # Corrección: Cambié DIFERENCIA_DIERENCIA_DIAS a DIFERENCIA_DIAS
         title=f"Media de Días de Espera por SEXO ({seguro})",
         labels={'DIFERENCIA_DIAS': 'Días de Espera'},
         template='plotly_white',
